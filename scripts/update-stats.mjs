@@ -141,12 +141,15 @@ const peak = Math.max(1, ...series.flatMap(s => s.values));
 const scale = 10 ** Math.floor(Math.log10(peak / 5));
 const tick = Math.max(1, [1, 2, 5, 10].map(n => n * scale).find(n => n >= peak / 5));
 const intervals = Math.ceil(peak / tick);
-const max = tick * intervals, x0 = 70, x1 = 870, top = 213, base = 443, height = base - top;
+const max = tick * intervals, x0 = 77, x1 = 688, top = 133, base = 411, height = base - top;
 let body = t(30, 43, 'Filip Nowakowicz', 24, fg, 'font-weight="600"');
+body += '<path d="M770 75V485" stroke="#30363d"/>';
 stats.forEach(([label, value], i) => {
-  body += t(30 + i * 153, 98, fmt(value), 30, fg, 'font-weight="600"') + t(30 + i * 153, 124, label, 12);
+  const x = 800 + (i % 2) * 145;
+  const y = 150 + Math.floor(i / 2) * 132;
+  body += t(x, y, fmt(value), 31, fg, 'font-weight="600"') + t(x, y + 25, label, 12);
 });
-body += t(30, 174, `Contributions accumulated in ${year}`, 16, fg);
+body += t(37, 100, `Contributions accumulated in ${year}`, 16, fg);
 for (let i = 0; i <= intervals; i++) {
   const y = base - i * height / intervals;
   body += `<path d="M${x0} ${y}H${x1}" stroke="#29333f"/>` + t(x0 - 12, y + 4, fmt(tick * i), 11, muted, 'text-anchor="end"');
@@ -168,9 +171,9 @@ series.forEach((s, j) => {
     body += `<circle cx="${px}" cy="${py}" r="3" fill="${s.color}"><title>${months[i]}: ${fmt(s.values[i])} ${s.name.toLowerCase()}</title></circle>`;
   });
   body += t(points.at(-1)[0] + 12, endpoints.find(p => p.i === j).y + 4, fmt(s.values.at(-1)), 12, s.color);
-  body += `<path d="M${30 + j * 280} 501h24" stroke="${s.color}" stroke-width="3"/>` + t(64 + j * 280, 506, s.name, 13);
+  body += `<path d="M${37 + j * 232} 468h24" stroke="${s.color}" stroke-width="3"/>` + t(71 + j * 232, 473, s.name, 13);
 });
-const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="960" height="530" viewBox="0 0 960 530" role="img"><title>GitHub statistics and cumulative activity in ${year}</title><desc>${stats.map(([label, value]) => `${label}: ${fmt(value)}`).join('; ')}. Public and accessible private activity combined. Commits include public contribution credits and authored commits on private non-fork default branches. Counters cover all years; graph accumulates monthly since January through ${today}. Current month is partial. No private repository details are included.</desc><rect x=".5" y=".5" width="959" height="529" rx="12" fill="#0d1117" stroke="#30363d"/><g font-family="Arial, sans-serif">${body}</g></svg>\n`;
+const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="1100" height="520" viewBox="0 0 1100 520" role="img"><title>GitHub statistics and cumulative activity in ${year}</title><desc>${stats.map(([label, value]) => `${label}: ${fmt(value)}`).join('; ')}. Public and accessible private activity combined. Commits include public contribution credits and authored commits on private non-fork default branches. Counters cover all years; graph accumulates monthly since January through ${today}. Current month is partial. No private repository details are included.</desc><rect x=".5" y=".5" width="1099" height="519" rx="12" fill="#0d1117" stroke="#30363d"/><g font-family="Arial, sans-serif">${body}</g></svg>\n`;
 await fs.mkdir('assets', { recursive: true });
 const filename = `github-stats-${createHash('sha256').update(svg).digest('hex').slice(0, 12)}.svg`;
 await fs.writeFile(`assets/${filename}`, svg);
