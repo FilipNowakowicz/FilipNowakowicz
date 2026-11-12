@@ -136,18 +136,20 @@ const escape = value => String(value).replaceAll('&', '&amp;').replaceAll('<', '
 const t = (x, y, s, size = 13, c = '#9daab8', extra = '') => `<text x="${x}" y="${y}" font-size="${size}" fill="${c}" ${extra}>${escape(s)}</text>`;
 const fg = '#e6edf3', muted = '#9daab8';
 const peak = Math.max(1, ...series.flatMap(s => s.values));
-// Round the axis up to a readable multiple of 1, 2 or 5.
-const scale = 10 ** Math.floor(Math.log10(peak / 4));
-const tick = [1, 2, 5, 10].map(n => n * scale).find(n => n >= peak / 4);
-const max = tick * 4, x0 = 70, x1 = 870, top = 213, base = 443, height = base - top;
+// Aim for five readable intervals, rounding the ceiling only one tick above
+// the data instead of forcing four intervals and leaving excessive headroom.
+const scale = 10 ** Math.floor(Math.log10(peak / 5));
+const tick = Math.max(1, [1, 2, 5, 10].map(n => n * scale).find(n => n >= peak / 5));
+const intervals = Math.ceil(peak / tick);
+const max = tick * intervals, x0 = 70, x1 = 870, top = 213, base = 443, height = base - top;
 let body = t(30, 43, 'Filip Nowakowicz', 24, fg, 'font-weight="600"');
 stats.forEach(([label, value], i) => {
   body += t(30 + i * 153, 98, fmt(value), 30, fg, 'font-weight="600"') + t(30 + i * 153, 124, label, 12);
 });
 body += t(30, 174, `Contributions accumulated in ${year}`, 16, fg);
-for (let i = 0; i <= 4; i++) {
-  const y = base - i * height / 4;
-  body += `<path d="M${x0} ${y}H${x1}" stroke="#29333f"/>` + t(x0 - 12, y + 4, fmt(max * i / 4), 11, muted, 'text-anchor="end"');
+for (let i = 0; i <= intervals; i++) {
+  const y = base - i * height / intervals;
+  body += `<path d="M${x0} ${y}H${x1}" stroke="#29333f"/>` + t(x0 - 12, y + 4, fmt(tick * i), 11, muted, 'text-anchor="end"');
 }
 const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 const x = i => month === 1 ? x0 : x0 + i * (x1 - x0) / (month - 1);
