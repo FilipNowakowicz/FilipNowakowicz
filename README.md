@@ -16,3 +16,5 @@ N::::::N       N:::::::N    i::::::i    x:::::x  x:::::x           O::OO::O    O
 N::::::N        N::::::N    i::::::i   x:::::x    x:::::x          O:O  O::O    O:O     S:::::::::::::::SS
 NNNNNNNN         NNNNNNN    iiiiiiii   xxxxxxx      xxxxxxx        OO    OOO     OO      SSSSSSSSSSSSSSS
 ```
+
+[![GitHub public statistics and cumulative activity](assets/github-stats.svg)](https://github.com/FilipNowakowicz?tab=repositories)
