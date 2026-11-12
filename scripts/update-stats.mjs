@@ -35,10 +35,11 @@ do {
   cursor = repos.pageInfo.hasNextPage ? repos.pageInfo.endCursor : null;
 } while (cursor);
 
-// Only public repository contributions enter either the totals or the chart.
+// Public metrics stay separate from anonymous private contribution counts.
 const fields = [];
 function collection(alias, from, to) {
   return `${alias}: contributionsCollection(from:"${from}T00:00:00Z",to:"${to}T23:59:59Z") {
+    restrictedContributionsCount
     commitContributionsByRepository(maxRepositories:100) {
       repository { isPrivate } contributions { totalCount }
     }
@@ -66,19 +67,23 @@ function commits(collection) {
   return repos.filter(r => !r.repository.isPrivate).reduce((sum, r) => sum + r.contributions.totalCount, 0);
 }
 let lifetimeCommits = 0;
+let lifetimePrivate = 0;
+for (let y = firstYear; y <= year; y++) lifetimePrivate += data.user[`y${y}`].restrictedContributionsCount;
 for (let y = firstYear; y <= year; y++) lifetimeCommits += commits(data.user[`y${y}`]);
 const stats = [
-  ['Commit contributions', lifetimeCommits], ['PRs opened', data.prs.issueCount],
-  ['PRs merged', data.merged.issueCount], ['Stars received', stars],
+  ['Public commits', lifetimeCommits], ['Public PRs opened', data.prs.issueCount],
+  ['Public PRs merged', data.merged.issueCount], ['Stars received', stars],
   ['Forks received', forks], ['Followers', profile.followers.totalCount],
+  ['Private contributions', lifetimePrivate],
 ];
 const series = [
-  { name: 'Commit contributions', color: '#83bff0', values: [] },
-  { name: 'PRs opened', color: '#dcacfa', values: [] },
-  { name: 'Issues opened', color: '#f2c078', values: [] },
+  { name: 'Public commits', color: '#83bff0', values: [] },
+  { name: 'Public PRs opened', color: '#dcacfa', values: [] },
+  { name: 'Public issues opened', color: '#f2c078', values: [] },
+  { name: 'Private contributions', color: '#79d2b0', values: [] },
 ];
 for (let m = 1; m <= month; m++) {
-  const values = [commits(data.user[`m${m}`]), data[`pr${m}`].issueCount, data[`issue${m}`].issueCount];
+  const values = [commits(data.user[`m${m}`]), data[`pr${m}`].issueCount, data[`issue${m}`].issueCount, data.user[`m${m}`].restrictedContributionsCount];
   series.forEach((s, i) => s.values.push(values[i] + (s.values.at(-1) ?? 0)));
 }
 const escape = value => String(value).replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('"', '&quot;');
@@ -91,9 +96,9 @@ const tick = [1, 2, 5, 10].map(n => n * scale).find(n => n >= peak / 4);
 const max = tick * 4, x0 = 70, x1 = 870, top = 213, base = 443, height = base - top;
 let body = t(30, 43, 'Filip Nowakowicz', 24, fg, 'font-weight="600"') + t(930, 41, 'GitHub', 14, muted, 'text-anchor="end"');
 stats.forEach(([label, value], i) => {
-  body += t(30 + i * 153, 98, fmt(value), 30, fg, 'font-weight="600"') + t(30 + i * 153, 124, label, 12);
+  body += t(30 + i * 129, 98, fmt(value), 27, fg, 'font-weight="600"') + t(30 + i * 129, 124, label, 10.5);
 });
-body += t(30, 156, 'Public totals · All years', 11) + t(30, 190, `Contributions accumulated in ${year}`, 16, fg);
+body += t(30, 156, 'Lifetime totals · Private activity combines contribution types', 11) + t(30, 190, `Contributions accumulated in ${year}`, 16, fg);
 for (let i = 0; i <= 4; i++) {
   const y = base - i * height / 4;
   body += `<path d="M${x0} ${y}H${x1}" stroke="#29333f"/>` + t(x0 - 12, y + 4, fmt(max * i / 4), 11, muted, 'text-anchor="end"');
@@ -115,10 +120,10 @@ series.forEach((s, j) => {
     body += `<circle cx="${px}" cy="${py}" r="3" fill="${s.color}"><title>${months[i]}: ${fmt(s.values[i])} ${s.name.toLowerCase()}</title></circle>`;
   });
   body += t(points.at(-1)[0] + 12, endpoints.find(p => p.i === j).y + 4, fmt(s.values.at(-1)), 12, s.color);
-  body += `<path d="M${30 + j * 280} 501h24" stroke="${s.color}" stroke-width="3"/>` + t(64 + j * 280, 506, s.name, 13);
+  body += `<path d="M${30 + j * 225} 501h24" stroke="${s.color}" stroke-width="3"/>` + t(64 + j * 225, 506, s.name, 13);
 });
-body += t(30, 540, `Public activity · *Current month through ${today} · Updated ${today}`, 12);
-const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="960" height="560" viewBox="0 0 960 560" role="img"><title>GitHub public totals and cumulative activity in ${year}</title><desc>${stats.map(([label, value]) => `${label}: ${fmt(value)}`).join('; ')}. Graph: public commit contributions, PRs opened and issues opened accumulated since January.</desc><rect x=".5" y=".5" width="959" height="559" rx="12" fill="#0d1117" stroke="#30363d"/><g font-family="Arial, sans-serif">${body}</g></svg>\n`;
+body += t(30, 540, `Public activity + anonymous private contributions · *Current month through ${today}`, 12);
+const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="960" height="560" viewBox="0 0 960 560" role="img"><title>GitHub statistics including anonymous private contributions in ${year}</title><desc>${stats.map(([label, value]) => `${label}: ${fmt(value)}`).join('; ')}. Graph: public commit contributions, PRs opened, issues opened and anonymous private contributions accumulated since January. Private contributions combine activity types; no repository details are included.</desc><rect x=".5" y=".5" width="959" height="559" rx="12" fill="#0d1117" stroke="#30363d"/><g font-family="Arial, sans-serif">${body}</g></svg>\n`;
 await fs.mkdir('assets', { recursive: true });
 await fs.writeFile('assets/github-stats.svg', svg);
-console.log(`Updated public stats for ${today}`);
+console.log(`Updated public and anonymous private stats for ${today}`);
