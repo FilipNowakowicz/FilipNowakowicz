@@ -33,7 +33,7 @@ jobs:
         run: |
           git config user.name 'Filip Nowakowicz'
           git config user.email 'filip.nowakowicz@gmail.com'
-          git add assets/github-stats.svg
+          git add assets/ README.md
           if ! git diff --cached --quiet; then
             git commit -m 'Update profile statistics'
             git push

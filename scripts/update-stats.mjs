@@ -1,4 +1,5 @@
 import fs from 'node:fs/promises';
+import { createHash } from 'node:crypto';
 
 const login = 'FilipNowakowicz';
 const token = process.env.GITHUB_TOKEN;
@@ -125,5 +126,10 @@ series.forEach((s, j) => {
 body += t(30, 540, `Public activity + anonymous private contributions · *Current month through ${today}`, 12);
 const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="960" height="560" viewBox="0 0 960 560" role="img"><title>GitHub statistics including anonymous private contributions in ${year}</title><desc>${stats.map(([label, value]) => `${label}: ${fmt(value)}`).join('; ')}. Graph: public commit contributions, PRs opened, issues opened and anonymous private contributions accumulated since January. Private contributions combine activity types; no repository details are included.</desc><rect x=".5" y=".5" width="959" height="559" rx="12" fill="#0d1117" stroke="#30363d"/><g font-family="Arial, sans-serif">${body}</g></svg>\n`;
 await fs.mkdir('assets', { recursive: true });
-await fs.writeFile('assets/github-stats.svg', svg);
+const filename = `github-stats-${createHash('sha256').update(svg).digest('hex').slice(0, 12)}.svg`;
+await fs.writeFile(`assets/${filename}`, svg);
+await fs.writeFile('README.md', `[![GitHub statistics including anonymous private contributions](assets/${filename})](https://github.com/${login}?tab=repositories)\n`);
+for (const old of await fs.readdir('assets')) {
+  if (/^github-stats(?:-[a-f0-9]{12})?\.svg$/.test(old) && old !== filename) await fs.unlink(`assets/${old}`);
+}
 console.log(`Updated public and anonymous private stats for ${today}`);
