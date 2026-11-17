@@ -1,1 +1,1 @@
-[![GitHub statistics](assets/github-stats-2c0fab517eea.svg)](https://github.com/FilipNowakowicz?tab=repositories)
+[![GitHub statistics](assets/github-stats-e8bf9144939c.svg)](https://github.com/FilipNowakowicz?tab=repositories)
